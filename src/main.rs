@@ -9,7 +9,7 @@ async fn main() -> Result<(), reqwest::Error> {
             .read_line(&mut word)
             .expect("Kelime okunamadı");
 
-        let url = String::from(format!("https://sozluk.gov.tr/gts?ara={}", word.trim()));
+        let url = String::from(format!("https://sozluk.gov.tr/gts?ara={}", word.trim().to_lowercase()));
 
         let definition: serde_json::Value =
             reqwest::Client::new()
