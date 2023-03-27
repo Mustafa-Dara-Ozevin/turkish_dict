@@ -1,39 +1,52 @@
-#[tokio::main]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+mod dict;
+use dict::Word;
 
-async fn main() -> Result<(), reqwest::Error> {
-    loop {
-        let mut word = String::new();
-        println!("Anlamını öğrenmek istediğiniz kelimeyi girin:");
+use eframe::egui;
 
-        std::io::stdin()
-            .read_line(&mut word)
-            .expect("Kelime okunamadı");
+fn main() -> Result<(), eframe::Error> {
+    // Log to stdout (if you run with `RUST_LOG=debug`).
+    tracing_subscriber::fmt::init();
 
-        let url = String::from(format!("https://sozluk.gov.tr/gts?ara={}", word.trim().to_lowercase()));
+    let options = eframe::NativeOptions {
+        ..Default::default()
+    };
+    eframe::run_native(
+        "Türkçe Sözlük",
+        options,
+        Box::new(|_cc| Box::<MyApp>::default()),
+    )
+}
 
-        let definition: serde_json::Value =
-            reqwest::Client::new()
-            .get(url)
-            .send()
-            .await?
-            .json()
-            .await?;
-        let mut definition_count: String = definition[0]["anlam_say"].to_string(); // can't parse the string because it is ""number"" instead "number"
-        definition_count.retain(|c| c != '"'); // use retain to remove extra double quotes
-        let definition_count: usize = match definition_count.parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Kelime bulunamadı"); //fails if get request was unsuccessful
-                continue;
+struct MyApp {
+    word: Word,
+}
+
+impl Default for MyApp {
+    fn default() -> Self {
+        Self { word: Word::new() }
+    }
+}
+
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Türkçe Sözlük").;
+            ui.horizontal(|ui| {
+                let name_label = ui.label("Kelime: ");
+                ui.text_edit_singleline(&mut self.word.name)
+                    .labelled_by(name_label.id);
+                if ui.button("Ara").clicked() {
+                    self.word.clear();
+                    self.word.get_def().unwrap_or(());
+                }
+            });
+
+            if self.word.def_count != 0 {
+                for (i, def) in self.word.definitions.iter().enumerate() {
+                    ui.label(format!("{}. {}", i + 1, def));
+                }
             }
-        };
-        let mut i = 0; // iterate over all the meanings to print them 
-        while i < definition_count {
-            let meaning = definition[0]["anlamlarListe"][i]["anlam"].to_string();
-            println!("{}. {}", i + 1, meaning);
-            println!("");
-
-            i = i + 1
-        }
+        });
     }
 }
