@@ -7,9 +7,9 @@ for it and only place it is mentioned is a random tweet. but since it uses offic
 
 ## Issues
 
-* Typing word's with "I" causes api call to fail
+* Typing words with "I" causes api call to fail
 * Blocking api call makes the program unresponsive while it is getting processed
-* UI elements are not dynamic and breaks at lower application sizes
+* UI elements are not dynamic and break at lower application sizes
 
 ## Platforms
 
